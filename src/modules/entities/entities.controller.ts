@@ -21,9 +21,11 @@ export class EntitiesController {
     return this.entitiesService.findAllTag();
   }
 
-  @Post('tags')
-  createTag(@Body() dto: CreateTagForCategoryDto) {
-    return this.entitiesService.createTag(dto);
+  
+  @Post('/tags')
+  createTag(@Body() tagName: CreateTagForCategoryDto) {
+    console.log(tagName);
+    return this.entitiesService.addTagToCategory(tagName.tag);
   }
 
   @Patch('tags/:id')
@@ -31,10 +33,12 @@ export class EntitiesController {
     return this.entitiesService.updateTag(id, dto);
   }
 
-  @Delete('tags/:id')
+
+  @Delete('/tags/:id')
   deleteTag(@Param('id') id: string) {
-    return this.entitiesService.deleteTag(id);
+    return this.entitiesService.removeTag(id);
   }
+
 
   // Навыки
   @Get('skills')
@@ -86,7 +90,7 @@ export class EntitiesController {
 
   @Post('tags-board-game')
   createTagForBoardGame(@Body() dto: CreateTagForBoardGameDto) {
-    return this.entitiesService.createTagForBoardGame(dto);
+    return this.entitiesService.addTagToBoardGame(dto.nameTag);
   }
 
   @Patch('tags-board-game/:id')
@@ -96,6 +100,6 @@ export class EntitiesController {
 
   @Delete('tags-board-game/:id')
   deleteTagForBoardGame(@Param('id') id: string) {
-    return this.entitiesService.deleteTagForBoardGame(id);
+    return this.entitiesService.removeTagForBoardGame(id);
   }
 }

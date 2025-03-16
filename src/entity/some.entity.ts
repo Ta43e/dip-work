@@ -139,6 +139,9 @@ export class BoardGame {
 
   @Column({ type: 'text' })
   equipment: string;
+  
+  @Column({ type: 'text' })
+  boardGameImage: string;
 
   @Column({ type: 'int' })
   minPlayers: number;
@@ -152,13 +155,12 @@ export class BoardGame {
   @Column({ type: 'int' })
   age: number;
 
-  @Column({ type: 'text' })
-  boardGameImage: string;
+
 
   @Column({ type: 'text' })
   rules: string;
 
-  @ManyToOne(() => Category, { nullable: false })
+  @ManyToOne(() => Category, { nullable: false, onDelete: 'CASCADE'  })
   category: Category;
 
   @OneToMany(() => Session, (session) => session.boardGame)
@@ -199,7 +201,7 @@ export class Category {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ type: 'varchar', length: 255, unique: true  })
   nameCategory: string;
 
   @Column({ type: 'text' })

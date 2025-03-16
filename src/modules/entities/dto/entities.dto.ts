@@ -2,7 +2,7 @@ import { IsUUID, IsString, IsInt, Min, Max, IsOptional } from 'class-validator';
 
 export class CreateTagForCategoryDto {
   @IsString()
-  nameTag: string;
+  tag: string;
 }
 
 export class UpdateTagForCategoryDto {

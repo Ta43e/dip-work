@@ -12,6 +12,7 @@ import { CreateBoardGameDto, UpdateBoardGameDto } from './dto/create-board-game.
   
     @Post()
     create(@Body() dto: CreateBoardGameDto) {
+      console.log(dto);
       return this.boardGameService.create(dto);
     }
   
@@ -33,6 +34,11 @@ import { CreateBoardGameDto, UpdateBoardGameDto } from './dto/create-board-game.
     @Delete(':id')
     remove(@Param('id') id: string) {
       return this.boardGameService.remove(id);
+    }
+
+    @Delete('/deleteTagToBoardGame/:nameTag')
+    removeTag(@Param('id') id: string) {
+      return this.boardGameService.removeTag(id);
     }
   }
   

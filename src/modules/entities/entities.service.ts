@@ -40,10 +40,41 @@ export class EntitiesService {
     return this.tagRepository.find();
   }
   // Теги категорий
-  async createTag(dto: CreateTagForCategoryDto): Promise<TagsForCategory> {
-    const tag = this.tagRepository.create(dto);
-    return this.tagRepository.save(tag);
+
+  async addTagToCategory(tagName: string): Promise<TagsForCategory | string> {
+    const existingTag = await this.tagRepository.findOne({ where: { nameTag: tagName } });
+
+    if (existingTag) {
+        return `Тег "${tagName}" уже существует.`;
+    }
+
+    const newTag = this.tagRepository.create({ nameTag: tagName });
+
+    return await this.tagRepository.save(newTag);
   }
+
+  async removeTag(id: string): Promise<string> {
+    const tag = await this.tagRepository.findOne({
+        where: { id: id },
+        relations: ['categories'],
+    });
+
+    if (!tag) {
+        return `Тег "${id}" не найден.`;
+    }
+    
+    for (const category of tag.categories) {
+        if(!category.tags) break;
+        category.tags = category.tags.filter((t) => t.id !== tag.id);
+    }
+
+    await Promise.all(tag.categories.map((category) => this.tagRepository.manager.save(category)));
+
+    await this.tagRepository.remove(tag);
+
+    return `Тег "${id}" успешно удалён.`;
+  }
+
 
   async updateTag(id: string, dto: UpdateTagForCategoryDto): Promise<TagsForCategory> {
     const tag = await this.tagRepository.findOne({ where: { id } });
@@ -52,11 +83,6 @@ export class EntitiesService {
     return this.tagRepository.save(tag);
   }
 
-  async deleteTag(id: string): Promise<void> {
-    const tag = await this.tagRepository.findOne({ where: { id } });
-    if (!tag) throw new NotFoundException('Tag not found');
-    await this.tagRepository.remove(tag);
-  }
 
   // Навыки
 
@@ -114,27 +140,48 @@ export class EntitiesService {
     await this.customTagsRepository.remove(tag);
   }
 // теги для игр
-    async findAllTagForBoardGame() {
-        return this.tagsForBoardGameRepository.find();
-    }
+async findAllTagForBoardGame() {
+  return this.tagsForBoardGameRepository.find();
+}
 
-  async createTagForBoardGame(dto: CreateTagForBoardGameDto): Promise<TagsForBoardGame> {
-    const tag = this.tagsForBoardGameRepository.create(dto);
-    return this.tagsForBoardGameRepository.save(tag);
+async addTagToBoardGame(tagName: string): Promise<TagsForBoardGame | string> {
+  const existingTag = await this.tagsForBoardGameRepository.findOne({ where: { nameTag: tagName } });
+  
+  if (existingTag) {
+      return `Тег "${tagName}" уже существует.`;
   }
+  
+  const newTag = this.tagsForBoardGameRepository.create({ nameTag: tagName });
+  return await this.tagsForBoardGameRepository.save(newTag);
+}
 
-  async updateTagForBoardGame(id: string, dto: UpdateTagForBoardGameDto): Promise<TagsForBoardGame> {
-    const tag = await this.tagsForBoardGameRepository.findOne({ where: { id } });
-    if (!tag) throw new NotFoundException('Tag for board game not found');
-
-    Object.assign(tag, dto);
-    return this.tagsForBoardGameRepository.save(tag);
+async removeTagForBoardGame(id: string): Promise<string> {
+  const tag = await this.tagsForBoardGameRepository.findOne({
+      where: { id: id },
+      relations: ['boardGames'],
+  });
+  
+  if (!tag) {
+      return `Тег "${id}" не найден.`;
   }
-
-  async deleteTagForBoardGame(id: string): Promise<void> {
-    const tag = await this.tagsForBoardGameRepository.findOne({ where: { id } });
-    if (!tag) throw new NotFoundException('Tag for board game not found');
-
-    await this.tagsForBoardGameRepository.remove(tag);
+  
+  for (const boardGame of tag.boardGames) {
+      if (!boardGame.tags) break;
+      boardGame.tags = boardGame.tags.filter((t) => t.id !== tag.id);
   }
+  
+  await Promise.all(tag.boardGames.map((boardGame) => this.tagsForBoardGameRepository.manager.save(boardGame)));
+  
+  await this.tagsForBoardGameRepository.remove(tag);
+  
+  return `Тег "${id}" успешно удалён.`;
+}
+
+async updateTagForBoardGame(id: string, dto: UpdateTagForBoardGameDto): Promise<TagsForBoardGame> {
+  const tag = await this.tagsForBoardGameRepository.findOne({ where: { id } });
+  if (!tag) throw new NotFoundException('Tag for board game not found');
+  
+  Object.assign(tag, dto);
+  return this.tagsForBoardGameRepository.save(tag);
+}
 }

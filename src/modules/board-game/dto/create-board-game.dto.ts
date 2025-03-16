@@ -84,8 +84,7 @@ import {
     rules?: string;
   
     @IsOptional()
-    @IsUUID()
-    categoryId?: string;
+    category?: string;
   
     @IsOptional()
     @IsArray()

@@ -1,6 +1,9 @@
-import { IsUUID, IsString, IsInt, Max, Min, IsDateString } from 'class-validator';
+import { IsUUID, IsString, IsInt, Max, Min, IsDateString, Matches } from 'class-validator';
 
 export class CreateSessionDto {
+  @IsString()
+  city: string;
+
   @IsString()
   place: string;
 
@@ -8,6 +11,7 @@ export class CreateSessionDto {
   date: string;
 
   @IsString()
+  @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: "Time must be in HH:mm format" })
   time: string;
 
   @IsString()

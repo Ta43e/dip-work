@@ -1,4 +1,9 @@
 import { IsUUID, IsString, IsOptional, IsArray, ArrayNotEmpty } from 'class-validator';
+export interface Tag {
+  id: string;
+  nameTag: string;
+}
+
 
 export class CreateCategoryDto {
   @IsString()

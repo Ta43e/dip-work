@@ -1,6 +1,11 @@
 import { IsUUID, IsString, IsInt, IsOptional, Max, Min, IsDateString } from 'class-validator';
 
 export class UpdateSessionDto {
+
+  @IsOptional()
+  @IsString()
+  city?: string;
+
   @IsOptional()
   @IsString()
   place?: string;

@@ -3,13 +3,16 @@ import { CreateCategoryDto, UpdateCategoryDto } from './dto/create-categories.dt
 import { CategoryService } from './categories.service';
 import { FilterDto } from './dto/filter-categories.dto';
 import { Category } from 'entity/some.entity';
+import { CreateTagForCategoryDto } from 'modules/entities/dto/entities.dto';
 
 @Controller('categories')
 export class CategoryController {
-  constructor(@Inject(CategoryService)private readonly categoryService: CategoryService) {}
+  constructor(@Inject(CategoryService)private readonly categoryService: CategoryService,
+) {}
 
-  @Post()
-  create(@Body() createCategoryDto: CreateCategoryDto) {
+  @Post("/addCategory")
+  addCategory(@Body() createCategoryDto: CreateCategoryDto) {
+    console.log(createCategoryDto);
     return this.categoryService.create(createCategoryDto);
   }
 
@@ -23,13 +26,25 @@ export class CategoryController {
     return this.categoryService.findOne(id);
   }
 
-  @Patch(':id')
+  @Patch('/updateCategory/:id')
   update(@Param('id') id: string, @Body() updateCategoryDto: UpdateCategoryDto) {
+    console.log(updateCategoryDto.tags);
     return this.categoryService.update(id, updateCategoryDto);
   }
 
-  @Delete(':id')
+  @Delete('/deleteCategory/:id')
   remove(@Param('id') id: string) {
     return this.categoryService.remove(id);
+  }
+
+  @Post('/addTagToCategory')
+  addTag(@Body() tagName: CreateTagForCategoryDto) {
+
+    return this.categoryService.addTagToCategory(tagName.tag);
+  }
+
+  @Delete('/deleteTagToCategory/:nameTag')
+  removeTag(@Param('id') id: string) {
+    return this.categoryService.removeTag(id);
   }
 }
