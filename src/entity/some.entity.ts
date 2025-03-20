@@ -64,12 +64,21 @@ export class Players {
 
   @OneToMany(() => HistoryGame, (history) => history.players)
   historyGames: HistoryGame[];
+
+  @Column({ type: 'text', nullable: true })
+  namePlayer: string;
+
+  @Column({ type: 'text', nullable: true })
+  phoneNumber: string;
 }
 
 @Entity()
 export class Session {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column({ type: 'text' })
+  sessionName: string;
 
   @Column({ type: 'varchar' })
   place: string;
@@ -210,7 +219,7 @@ export class Category {
   @Column({ type: 'text' })
   description: string;
 
-  @ManyToMany(() => TagsForCategory, (tag) => tag.categories)
+  @ManyToMany(() => TagsForCategory, { cascade: true })
   @JoinTable()
   tags: TagsForCategory[];
 

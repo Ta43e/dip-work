@@ -4,6 +4,7 @@ import { Category, TagsForCategory } from 'entity/some.entity';
 import { In, Repository } from 'typeorm';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/create-categories.dto';
 import { FilterDto } from './dto/filter-categories.dto';
+import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
 
 @Injectable()
 export class CategoryService {
@@ -16,33 +17,116 @@ export class CategoryService {
   ) {}
 
   async create(dto: CreateCategoryDto): Promise<Category> {
-    console.log(dto);
-    const tags = dto.tags ? await this.tagsRepository.findByIds(dto.tags) : [];
+    try {
+        let tags: TagsForCategory[] = [];
 
-    const category = this.categoryRepository.create({
-      ...dto,
-      tags,
-    });
+        if (dto.tags && dto.tags.length > 0) {
+            // Ищем существующие теги по именам
+            const existingTags = await this.tagsRepository.find({
+                where: { nameTag: In(dto.tags) },
+            });
 
-    return this.categoryRepository.save(category);
-  }
+            // Массив имен существующих тегов
+            const existingTagNames = existingTags.map(tag => tag.nameTag);
+
+            // Находим новые теги, которых нет среди существующих
+            const newTagNames = dto.tags.filter(tag => !existingTagNames.includes(tag));
+
+            let newTags: TagsForCategory[] = [];
+            if (newTagNames.length > 0) {
+                // Создаем новые теги и сохраняем их в базе
+                newTags = this.tagsRepository.create(
+                    newTagNames.map(nameTag => ({ nameTag }))
+                );
+                await this.tagsRepository.save(newTags);
+            }
+
+            tags = [...existingTags, ...newTags];
+        }
+
+        console.log('Теги перед сохранением категории:', tags);
+
+        // Создаем категорию БЕЗ тегов
+        const category = this.categoryRepository.create({...dto, tags});
+
+        // Сначала сохраняем категорию
+        const savedCategory = await this.categoryRepository.save(category);
+
+        if (tags.length > 0) {
+            // Привязываем теги и обновляем
+            savedCategory.tags = tags;
+            await this.categoryRepository.save(savedCategory);
+        }
+        console.log(savedCategory);
+        return savedCategory;
+    } catch (e) {
+        console.error(e);
+        throw new ExceptionsHandler(e);
+    }
+}
+
+
+
 
   async findAll(filters: FilterDto): Promise<Category[]> {
-    const query = this.categoryRepository.createQueryBuilder('category')
-      .leftJoinAndSelect('category.tags', 'tags')
-      .leftJoinAndSelect('category.boardGames', 'boardGames');
+  
+    if (typeof filters.selectedTags === "string") {
+      filters.selectedTags = [filters.selectedTags];
+    }
+  
+    // Получаем общее число игр
+    const totalGamesCount = await this.categoryRepository
+      .createQueryBuilder("category")
+      .leftJoin("category.boardGames", "boardGames")
+      .select("COUNT(DISTINCT boardGames.id)", "count")
+      .getRawOne();
+  
+    const totalGames = Number(totalGamesCount.count) || 1; // Защита от деления на 0
+  
+    const query = this.categoryRepository.createQueryBuilder("category")
+    .leftJoin("category.boardGames", "boardGames")
+    .leftJoin("category.tags", "tags")
+    .loadRelationCountAndMap("category.gamesCount", "category.boardGames")
+    .addSelect(`COUNT(DISTINCT boardGames.id) * 100.0 / :totalGames`, "popularityPercentage")
+    .addSelect(`JSON_AGG(DISTINCT jsonb_build_object('id', tags.id, 'nameTag', tags.nameTag))::TEXT`, "tags")
+    .addSelect(`JSON_AGG(DISTINCT jsonb_build_object('id', boardGames.id, 'name', boardGames.nameBoardGame))::TEXT`, "games") // Приводим к строке
+    .setParameter("totalGames", totalGames)
+    .groupBy("category.id");
 
-    if (filters.searchQuery) {
-      query.andWhere('category.nameCategory ILIKE :searchQuery', { searchQuery: `%${filters.searchQuery}%` });
-    }
-    if (filters.selectedCategory && filters.selectedCategory !== 'Все') {
-      query.andWhere('category.nameCategory = :selectedCategory', { selectedCategory: filters.selectedCategory });
-    }
-    if (filters.selectedTags && filters.selectedTags.length) {
-      query.andWhere('tags.nameTag IN (:...selectedTags)', { selectedTags: filters.selectedTags });
-    }
-    return query.getMany();
-  }
+if (filters.searchQuery) {
+  query.andWhere("category.nameCategory ILIKE :searchQuery", { searchQuery: `%${filters.searchQuery}%` });
+}
+
+// if (filters.selectedCategory && filters.selectedCategory !== "Все") {
+//   query.andWhere("category.nameCategory = :selectedCategory", { selectedCategory: filters.selectedCategory });
+// }
+
+if (filters.selectedTags && filters.selectedTags.length) {
+  query.andWhere("tags.nameTag IN (:...selectedTags)", { selectedTags: filters.selectedTags });
+}
+
+// Фильтруем по популярности
+query.having("COUNT(DISTINCT boardGames.id) * 100.0 / :totalGames >= :minPopularity", { minPopularity: 0 });
+
+query.orderBy("COUNT(DISTINCT boardGames.id) * 100.0 / :totalGames", "DESC");
+
+const categories = await query.getRawAndEntities();
+
+// Парсим JSON-агрегированные данные
+return categories.entities.map((category, index) => ({
+  ...category,
+  popularityPercentage: parseFloat(categories.raw[index].popularityPercentage),
+  tags: typeof categories.raw[index].tags === "string"
+    ? JSON.parse(categories.raw[index].tags)
+    : categories.raw[index].tags || [],
+    boardGames: typeof categories.raw[index].games === "string"
+    ? JSON.parse(categories.raw[index].games)
+    : categories.raw[index].games || [],
+}));
+
+}
+  
+  
 
   async findOne(id: string): Promise<Category> {
     const category = await this.categoryRepository.findOne({

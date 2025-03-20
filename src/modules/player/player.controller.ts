@@ -16,8 +16,9 @@ import { CreatePlayerDto } from './dto/create-player.dto';
   export class PlayerController {
     constructor(@Inject(PlayerService )private readonly playersService: PlayerService) {}
   
-    @Post()
+    @Post("record")
     create(@Body() createPlayerDto: CreatePlayerDto) {
+      console.log('ddd');
       return this.playersService.create(createPlayerDto);
     }
   
@@ -35,9 +36,15 @@ import { CreatePlayerDto } from './dto/create-player.dto';
     update(@Param('id') id: string, @Body() updatePlayerDto: UpdatePlayerDto) {
       return this.playersService.update(id, updatePlayerDto);
     }
-  
+
+    @Delete('/unrecord')
+    async unrecord(@Body() { participantId }: { participantId: string }) {
+      return this.playersService.remove(participantId);
+    }
+
     @Delete(':id')
     remove(@Param('id') id: string) {
+      console.log(id);
       return this.playersService.remove(id);
     }
   }

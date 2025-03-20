@@ -12,10 +12,15 @@ import { CreateBoardGameDto, UpdateBoardGameDto } from './dto/create-board-game.
   
     @Post()
     create(@Body() dto: CreateBoardGameDto) {
-      console.log(dto);
       return this.boardGameService.create(dto);
     }
   
+    @Get(":category")
+    findAllInOneCategory(@Param("category") categoryName: string) {
+      console.log(categoryName);
+      return this.boardGameService.findAllInOneCategory(categoryName);
+    }
+
     @Get()
     findAll() {
       return this.boardGameService.findAll();

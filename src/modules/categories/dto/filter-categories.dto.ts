@@ -1,4 +1,5 @@
 import { IsOptional, IsString, IsArray } from 'class-validator';
+import { Transform } from "class-transformer";
 
 export class FilterDto {
   @IsOptional()
@@ -20,5 +21,11 @@ export class FilterDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  selectedTags?: string[];
+  @Transform(({ value }) => {
+    console.log("📌 Преобразуем selectedTags:", value);
+    if (!value) return [];
+    return Array.isArray(value) ? value : [String(value)];
+  })
+  selectedTags: string[] = [];
+  
 }

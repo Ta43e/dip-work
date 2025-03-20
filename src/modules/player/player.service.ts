@@ -17,17 +17,19 @@ export class PlayerService {
   ) {}
 
   async create(createPlayerDto: CreatePlayerDto): Promise<Players> {
-    const { userId, sessionId } = createPlayerDto;
-
+    const { userId, eventId,  namePlayer, phoneNumber} = createPlayerDto;
+    console.log(namePlayer + " " + phoneNumber)
     const user = await this.usersRepository.findOne({ where: { id: userId } });
     if (!user) throw new Error('User not found');
 
-    const session = await this.sessionRepository.findOne({ where: { id: sessionId } });
+    const session = await this.sessionRepository.findOne({ where: { id: eventId } });
     if (!session) throw new Error('Session not found');
 
     const player = this.playersRepository.create({ 
       user, 
-      session, 
+      session,
+      namePlayer,
+      phoneNumber
     });
 
     return this.playersRepository.save(player);

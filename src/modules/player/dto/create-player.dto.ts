@@ -1,6 +1,8 @@
 import { IsEmail, IsEnum, IsOptional, IsString, Length } from 'class-validator';
 
 export class CreatePlayerDto {
+  eventId: string;
   userId: string;
-  sessionId: string;
+  namePlayer?: string;
+  phoneNumber?: string;
 }

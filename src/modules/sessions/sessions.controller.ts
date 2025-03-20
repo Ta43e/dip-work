@@ -10,28 +10,40 @@ export class SessionsController {
 
   @Post()
   create(@Body() createSessionDto: CreateSessionDto) {
-    
+    console.log(createSessionDto);
     return this.sessionService.create(createSessionDto);
   }
 
   @Get('my-sessions')
   async findMySessions(
-    @Query('search') place?: string,
+    @Query('search') sessionName?: string,
     @Query('status') status?: string,
     @Query('date') date?: string,
   ): Promise<Session[]> {
     const userId = "295d6bfb-0bcc-4151-acb9-af3fa6fc8c04";
-    return await this.sessionService.findMySessions(userId, status, place, date);
+    return await this.sessionService.findMySessions(userId, status, sessionName, date);
   }
 
-  @Get()
-  findAll() {
-    return this.sessionService.findAll();
+  @Get(':boardGame')
+  async findAll(@Param("boardGame") boardGameName: string) {
+    console.log("boardGame");
+    const sessions = await this.sessionService.findAll(boardGameName);
+    console.log(sessions);
+    return sessions ;
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.sessionService.findOne(id);
+  @Get('/details/:id') 
+  async findOne(@Param('id') id: string) {
+    console.log("details");
+    const sessions =  [await this.sessionService.findOneById(id)];
+    console.log(sessions);
+    return sessions ;
+  }
+
+  @Get('')    
+  findAllL() {
+    console.log("findAllL");
+    return this.sessionService.findAlll();
   }
 
   @Patch(':id')
@@ -43,6 +55,4 @@ export class SessionsController {
   remove(@Param('id') id: string) {
     return this.sessionService.remove(id);
   }
-
-
 }

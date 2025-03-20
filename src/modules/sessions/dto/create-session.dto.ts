@@ -1,6 +1,10 @@
 import { IsUUID, IsString, IsInt, Max, Min, IsDateString, Matches } from 'class-validator';
 
 export class CreateSessionDto {
+
+  @IsString()
+  sessionName: string;
+
   @IsString()
   city: string;
 
@@ -30,6 +34,6 @@ export class CreateSessionDto {
   @IsUUID()
   organizerId: string;
 
-  @IsUUID()
-  boardGameId: string;
+  @IsString()
+  game: string;
 }

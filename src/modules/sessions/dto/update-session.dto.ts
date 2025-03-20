@@ -4,6 +4,10 @@ export class UpdateSessionDto {
 
   @IsOptional()
   @IsString()
+  sessionName?: string;
+
+  @IsOptional()
+  @IsString()
   city?: string;
 
   @IsOptional()

@@ -18,7 +18,7 @@ export class CreateCategoryDto {
   @IsOptional()
   @IsArray()
   @ArrayNotEmpty()
-  @IsUUID('4', { each: true })  // Массив UUID тегов для категории
+  @IsString({ each: true }) // Теперь ожидаем массив строк (имен тегов)
   tags?: string[];
 }
 

@@ -21,23 +21,55 @@ export class BoardGameService {
   async create(dto: CreateBoardGameDto) {
     const category = await this.categoryRepository.findOne({ where: { id: dto.categoryId } });
     if (!category) throw new NotFoundException('Category not found');
-  
-    const tags = dto.tags ? await this.tagsRepository.findByIds(dto.tags) : [];
-  
+
+    let tags: TagsForBoardGame[] = []; 
+    if (dto.tags && dto.tags.length > 0) {
+        const existingTags = await this.tagsRepository.find({
+            where: { nameTag: In(dto.tags) },
+        });
+
+        const existingTagNames = existingTags.map(tag => tag.nameTag);
+        const newTagNames = dto.tags.filter(tag => !existingTagNames.includes(tag));
+
+        let newTags: TagsForBoardGame[] = []; 
+        if (newTagNames.length > 0) {
+            newTags = this.tagsRepository.create(newTagNames.map(nameTag => ({ nameTag })));
+            await this.tagsRepository.save(newTags);
+        }
+
+        tags = [...existingTags, ...newTags]; 
+    }
+
     const boardGame = this.boardGameRepository.create({ ...dto, category, tags });
     const savedBoardGame = await this.boardGameRepository.save(boardGame);
-  
-    // Возвращаем объект без вложенного category, а только с именем категории
     return { 
-      ...savedBoardGame, 
-      category: savedBoardGame.category.nameCategory
+        ...savedBoardGame, 
+        category: savedBoardGame.category.nameCategory
     };
-  }
+}
+
+
+async findAllInOneCategory(categoryName: string) {
+  console.log(categoryName);
+  const games = await this.boardGameRepository.find({
+    relations: ['category', 'tags'],
+    where: {category: {nameCategory: categoryName}},
+  });
+
+
+
+  return games.map((game) => ({
+    ...game,
+    category: (game.category as Category)?.nameCategory,
+  }));
+}
 
   async findAll() {
     const games = await this.boardGameRepository.find({
       relations: ['category', 'tags'],
     });
+
+
   
     return games.map((game) => ({
       ...game,

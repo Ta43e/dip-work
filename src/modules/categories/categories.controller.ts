@@ -10,17 +10,20 @@ export class CategoryController {
   constructor(@Inject(CategoryService)private readonly categoryService: CategoryService,
 ) {}
 
+  @Get()
+  async findAll(@Query() filters: FilterDto): Promise<Category[]> {
+    if (typeof filters.selectedTags === "string") {
+      filters.selectedTags = [filters.selectedTags];
+    }
+    const data = await this.categoryService.findAll(filters);
+    return data;
+  }
+
   @Post("/addCategory")
   addCategory(@Body() createCategoryDto: CreateCategoryDto) {
-    console.log(createCategoryDto);
     return this.categoryService.create(createCategoryDto);
   }
-
-  @Get()
-  findAll(@Query() filters: FilterDto): Promise<Category[]> {
-    return this.categoryService.findAll(filters);
-  }
-
+  
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.categoryService.findOne(id);
