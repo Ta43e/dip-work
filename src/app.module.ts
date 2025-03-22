@@ -10,14 +10,23 @@ import { BoardGameModule } from './modules/board-game/board-game.module';
 import { HistoryGamesModule } from './modules/history-games/history-games.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { EntitiesModule } from 'modules/entities/entities.module';
+import { AuthModule } from './auth/auth.module';
+import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      envFilePath: `.env`,
+      envFilePath: '.env',
       isGlobal: true,
     }),
+    PassportModule.register({ defaultStrategy: 'jwt' }),
     TypeOrmModule.forRoot(configPg()),
+    JwtModule.register({
+      secret: process.env.JWT_SECRET || 'default_secret',
+      signOptions: { expiresIn: '30d' },
+    }),
+    AuthModule,
     UserModule,
     PlayerModule,
     SessionsModule,

@@ -60,7 +60,7 @@ export class SessionsService {
           id: player.user.id,
           name: player.user.nickname,
           avatar: player.user.mainPhoto || "",
-          skillLvl: userSkills ? userSkills.skillLvl : 0, // Если скилла нет, передаем 0
+          skillLvl: userSkills ? userSkills.skillLvl : 0,
         };
       }),
       organizer: {

@@ -2,16 +2,19 @@ import {
     Injectable,
     NotFoundException,
     BadRequestException,
+    Inject,
   } from '@nestjs/common';
   import { InjectRepository } from '@nestjs/typeorm';
 import { Users } from 'entity/some.entity';
-  import { Repository } from 'typeorm';
-  
+import { Repository } from 'typeorm';
+import * as argon from 'argon2';  
+import { JwtService } from '@nestjs/jwt';
   @Injectable()
   export class UserService {
     constructor(
       @InjectRepository(Users)
       private readonly usersRepository: Repository<Users>,
+      @Inject(JwtService) private readonly jwtService: JwtService,
     ) {    }
   
     // Получение всех пользователей
@@ -29,9 +32,19 @@ import { Users } from 'entity/some.entity';
     }
   
     // Создание нового пользователя
-    async createUser(userData: Partial<Users>): Promise<Users> {
-      const user = this.usersRepository.create(userData);
-      return await this.usersRepository.save(user);
+    async createUser(userData: Partial<Users>){
+      if (!userData.hashPassword) {
+        throw new BadRequestException('Password is required');
+      }
+    
+      userData.hashPassword = await argon.hash(userData.hashPassword);
+      console.log()
+      const user = this.usersRepository.create({
+        ...userData, // Передаём все данные
+      });
+      const token = this.jwtService.sign({id: user.id, role: user.role, status: user.statusProfile}, { secret: process.env.JWT_SECRET })
+      const saveUser = await this.usersRepository.save(user);
+      return {saveUser, token};
     }
   
     // Обновление данных пользователя
@@ -65,6 +78,10 @@ import { Users } from 'entity/some.entity';
       }
       user.statusProfile = 'active';
       return await this.usersRepository.save(user);
+    }
+
+    async findOneByEmail(email: string) {
+      return this.usersRepository.findOne({where: {email: email}})
     }
   }
   
