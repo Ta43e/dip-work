@@ -36,7 +36,7 @@ export class EntitiesController {
 
   @Delete('/tags/:id')
   deleteTag(@Param('id') id: string) {
-    return this.entitiesService.removeTag(id);
+    return JSON.stringify(this.entitiesService.removeTag(id));
   }
 
 
@@ -90,7 +90,8 @@ export class EntitiesController {
 
   @Post('tags-board-game')
   createTagForBoardGame(@Body() dto: CreateTagForBoardGameDto) {
-    return this.entitiesService.addTagToBoardGame(dto.nameTag);
+    console.log(dto);
+    return this.entitiesService.addTagToBoardGame(dto.tag);
   }
 
   @Patch('tags-board-game/:id')
@@ -100,6 +101,7 @@ export class EntitiesController {
 
   @Delete('tags-board-game/:id')
   deleteTagForBoardGame(@Param('id') id: string) {
-    return this.entitiesService.removeTagForBoardGame(id);
+    console.log(id);
+    return JSON.stringify(this.entitiesService.removeTagForBoardGame(id));
   }
 }

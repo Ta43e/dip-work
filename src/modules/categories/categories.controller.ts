@@ -4,6 +4,7 @@ import { CategoryService } from './categories.service';
 import { FilterDto } from './dto/filter-categories.dto';
 import { Category } from 'entity/some.entity';
 import { CreateTagForCategoryDto } from 'modules/entities/dto/entities.dto';
+import { FirebaseService } from '../firebase/firebase-service';
 
 @Controller('categories')
 export class CategoryController {
@@ -21,6 +22,7 @@ export class CategoryController {
 
   @Post("/addCategory")
   addCategory(@Body() createCategoryDto: CreateCategoryDto) {
+    console.log(createCategoryDto);
     return this.categoryService.create(createCategoryDto);
   }
   

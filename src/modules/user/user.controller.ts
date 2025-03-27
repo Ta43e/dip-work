@@ -10,12 +10,16 @@ import {
     ValidationPipe,
     Inject,
     UseGuards,
+    Request,
+    Patch,
   } from '@nestjs/common';
   import { CreateUserDto } from './dto/create-user.dto';
   import { UpdateUserDto } from './dto/update-user.dto';
   import { UserService } from './user.service';
+  import { FirebaseService } from '../firebase/firebase-service';
 import { LocalAuthGuard } from 'auth/guards/local-auth.guard';
 import { JwtAuthGuard } from 'auth/guards/jwt-auth.guard';
+import { UpdateProfileDto } from './dto/update-profile.dto';
   
   @Controller('user')
   export class UserController {
@@ -26,6 +30,61 @@ import { JwtAuthGuard } from 'auth/guards/jwt-auth.guard';
     async getAllUsers() {
       return await this.userService.getAllUsers();
     }
+
+    // Работа с профилем 
+    @UseGuards(JwtAuthGuard)
+    @Get("profile")
+    async getProfile(@Request() req) {
+      return await this.userService.getProfile(req.user.id);
+    }
+
+    // Работа с профилем 
+    @UseGuards(JwtAuthGuard)
+    @Get("profile/:id")
+    async getProfileOther( @Param("id") id: string) {
+      console.log(id);
+      return await this.userService.getProfile(id);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Patch('profile')
+    async updateProfile(@Request() req, @Body() updateProfileDto: UpdateProfileDto) {
+      return await this.userService.updateProfile(req.user.id, updateProfileDto);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('/profile/add/games')
+    async addGameToProfile(
+      @Request() req, 
+      @Body() gameData: { nameBoardGame: string, mastery: number }
+    ) {
+      const userId = req.user.id;
+      return await this.userService.addGameToProfile(userId, gameData);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Delete('/profile/games/:id')
+    async removeGameFromProfile(
+      @Request() req, 
+      @Param("id") id: string
+    ) {
+      const userId = req.user.id;
+      return await this.userService.removeGameFromProfile(userId, id);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Patch('/profile/games/skils/:id')
+    async updateGameMastery(
+      @Request() req, 
+      @Param("id") id: string,
+      @Body() mastery: {mastery: number}
+    ) {
+      console.log(mastery.mastery);
+      const userId = req.user.id;
+      return await this.userService.updateGameMastery(userId, id, mastery.mastery);
+    }
+  
+    // ----------
     @UseGuards(JwtAuthGuard)
     @Get(':id')
     async getUserById(@Param('id') id: string) {

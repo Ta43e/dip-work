@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Request } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BoardGame, Session, Users } from 'entity/some.entity';
 import { Repository } from 'typeorm';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { UpdateSessionDto } from './dto/update-session.dto';
 import { UUID } from 'crypto';
+import { console } from 'inspector';
 
 @Injectable()
 export class SessionsService {
@@ -14,10 +15,9 @@ export class SessionsService {
     @InjectRepository(Session) private readonly sessionRepository: Repository<Session>,
   ) {}
 
-  async create(createSessionDto: CreateSessionDto): Promise<Session> {
+  async create(createSessionDto: CreateSessionDto, id: string): Promise<Session> {
     const { game, ...sessionData } = createSessionDto;
     sessionData.skillsLvl = +sessionData.skillsLvl;
-    const id = "295d6bfb-0bcc-4151-acb9-af3fa6fc8c04";
     const organizer = await this.userRepository.findOne({ where: { id } });
     if (!organizer) {
       throw new Error('Organizer not found');
@@ -38,7 +38,8 @@ export class SessionsService {
   
   async findAll(boardGameName: string) {
     const sessions = await this.sessionRepository.find({
-      relations: ['organizer', 'players', 'players.user', 'players.user.skills', 'boardGame', 'customTags'],
+      relations: ['organizer', 'players', 'players.user', 'players.user.skills', 'boardGame', 'customTags',         'historyGames',
+        'historyGames.players',],
       where: { boardGame: { nameBoardGame: boardGameName } },
     });
   
@@ -55,12 +56,20 @@ export class SessionsService {
         const userSkills = (await (player.user.skills ?? [])).find(
           (skill) => skill.boardGameName === session.boardGame.nameBoardGame
         );
+
+          // Находим историю игры, связанную с этим игроком
+        const history = session.historyGames.find((hg) =>
+          hg.players.some((p) => p.id === player.id)
+        );
   
         return {
-          id: player.user.id,
+          id: player.id,
+          idUser: player.user.id,
           name: player.user.nickname,
-          avatar: player.user.mainPhoto || "",
+          avatar: player.user.mainPhoto || '',
           skillLvl: userSkills ? userSkills.skillLvl : 0,
+          position: player?.result || null, 
+          score: player?.score || null, 
         };
       }),
       organizer: {
@@ -77,6 +86,7 @@ export class SessionsService {
     return this.sessionRepository.find({ relations: ['organizer', 'players', 'boardGame', 'historyGames', 'customTags']},
     );
   }
+
   async findOne(id: string): Promise<Session> {
     const session = await this.sessionRepository.findOne({ where: { id }, relations: ['organizer', 'players', 'boardGame', 'historyGames', 'customTags'] });
     if (!session) {
@@ -86,10 +96,19 @@ export class SessionsService {
     return session;
   }
 
-  async findOneById(id: string){
+  async findOneById(id: string) {
     const session = await this.sessionRepository.findOne({
       where: { id },
-      relations: ['organizer', 'players', 'players.user', 'players.user.skills', 'boardGame', 'historyGames', 'customTags'],
+      relations: [
+        'organizer',
+        'players',
+        'players.user',
+        'players.user.skills',
+        'boardGame',
+        'historyGames',
+        'historyGames.players',
+        'customTags',
+      ],
     });
   
     if (!session) {
@@ -105,28 +124,27 @@ export class SessionsService {
       description: session.description,
       maxPlayers: session.maxPlayers,
       skillsLvl: session.skillsLvl,
-      players: await Promise.all(
-        session.players.map(async (player) => {
-          const userSkills = (await player.user.skills) // Ждём загрузки skills
-            ?.find((skill) => skill.boardGameName === session.boardGame.nameBoardGame);
+      players: session.players.map((player) => {
+        const userSkills = player.user.skills?.find(
+          (skill) => skill.boardGameName === session.boardGame.nameBoardGame
+        );
   
-          return {
-            id: player.id,
-            nickname: player.user.nickname,
-            avatar: player.user.mainPhoto || "",
-            skillLvl: userSkills ? userSkills.skillLvl : 0,
-          };
-        })
-      ),
+        return {
+          id: player.id,
+          idUser: player.user.id,
+          name: player.user.nickname,
+          avatar: player.user.mainPhoto || '',
+          skillLvl: userSkills ? userSkills.skillLvl : 0,
+          position: player?.result || null, 
+          score: player?.score || null, 
+        };
+      }),
       organizer: {
         id: session.organizer.id,
         nickname: session.organizer.nickname,
-        avatar: session.organizer.mainPhoto || "",
+        avatar: session.organizer.mainPhoto || '',
       },
-      boardGame: {
-        id: session.boardGame.id,
-        nameBoardGame: session.boardGame.nameBoardGame,
-      },
+      boardGame: session.boardGame.nameBoardGame,
       customTags: session.customTags.map((tag) => ({
         id: tag.id,
         nameTag: tag.nameTag,
@@ -134,11 +152,51 @@ export class SessionsService {
     };
   }
   
+  
 
-  async update(id: string, updateSessionDto: UpdateSessionDto): Promise<Session> {
-    await this.sessionRepository.update(id, updateSessionDto);
-    return this.findOne(id);
+  async update(id: string, updateSessionDto: UpdateSessionDto) {
+    const session = await this.sessionRepository.findOne({ where: { id } });
+  
+    if (!session) {
+      throw new NotFoundException(`Сессия с ID ${id} не найдена`);
+    }
+  
+    // Обновляем только те поля, которые переданы
+    if (updateSessionDto.sessionName !== undefined) {
+      session.sessionName = updateSessionDto.sessionName;
+    }
+    if (updateSessionDto.city !== undefined) {
+      session.place = updateSessionDto.city;
+    }
+    if (updateSessionDto.place !== undefined) {
+      session.place = updateSessionDto.place;
+    }
+    if (updateSessionDto.date !== undefined) {
+      session.date = updateSessionDto.date;
+    }
+    if (updateSessionDto.time !== undefined) {
+      session.time = updateSessionDto.time;
+    }
+    if (updateSessionDto.description !== undefined) {
+      session.description = updateSessionDto.description;
+    }
+    if (updateSessionDto.maxPlayers !== undefined) {
+      session.maxPlayers = updateSessionDto.maxPlayers;
+    }
+    if (updateSessionDto.skillsLvl !== undefined) {
+      session.skillsLvl = updateSessionDto.skillsLvl;
+    }
+  
+    // Сохраняем обновленную сущность
+    await this.sessionRepository.save(session);
+  
+    // Возвращаем обновленную сессию с отношениями
+    return this.sessionRepository.findOne({
+      where: { id },
+      relations: ['players', 'organizer', 'boardGame', 'historyGames', 'customTags'],
+    });
   }
+  
 
   async remove(id: string): Promise<void> {
     const result = await this.sessionRepository.delete(id);
@@ -147,23 +205,122 @@ export class SessionsService {
     }
   }
 
-  async findMySessions(userId: string, status?: string, sessionName?: string, date?: string): Promise<Session[]> {
-    status = !status ? "all" : status;
-    console.log(status);
+  async findMySessions(userId: string, status?: string, sessionName?: string, date?: string) {
+    status = status || "all";
+  
     const query = this.sessionRepository
-      .createQueryBuilder('session')
-      .leftJoinAndSelect('session.players', 'player')
-      .where('player.userId = :userId', { userId });
-
+      .createQueryBuilder("session")
+      .leftJoinAndSelect("session.players", "player")
+      .leftJoinAndSelect("player.user", "user")
+      .leftJoinAndSelect("user.skills", "skill")
+      .leftJoinAndSelect("session.organizer", "organizer")
+      .leftJoinAndSelect("session.boardGame", "boardGame")
+      .leftJoinAndSelect("session.customTags", "customTag")
+      .where("player.userId = :userId", { userId });
+  
     if (sessionName) {
-      query.andWhere('session.sessionName = :sessionName', { sessionName });
+      query.andWhere("session.sessionName = :sessionName", { sessionName });
     }
-
+  
     if (date) {
-      query.andWhere('session.date = :date', { date });
+      query.andWhere("session.date = :date", { date });
     }
-
-
-    return query.getMany();
+  
+    const sessions = await query.getMany();
+  
+    return sessions.map((session) => ({
+      id: session.id,
+      sessionName: session.sessionName,
+      place: session.place,
+      date: session.date,
+      time: session.time,
+      description: session.description,
+      maxPlayers: session.maxPlayers,
+      skillsLvl: session.skillsLvl,
+      players: session.players.map((player) => {
+        const userSkills = player.user.skills?.find(
+          (skill) => skill.boardGameName === session.boardGame.nameBoardGame
+        );
+        return {
+          id: player.id,
+          idUser: player.user.id,
+          name: player.user.nickname,
+          avatar: player.user.mainPhoto || '',
+          skillLvl: userSkills ? userSkills.skillLvl : 0,
+          position: player?.result || null, 
+          score: player?.score || null, 
+        };
+      }),
+      organizer: {
+        id: session.organizer.id,
+        name: session.organizer.nickname,
+        avatar: session.organizer.mainPhoto || "",
+      },
+      boardGame: session.boardGame.nameBoardGame,
+      customTags: session.customTags.map((tag) => tag.nameTag),
+    }));
   }
+  
+
+  async findMyCreatedSessions(userId: string, status?: string, sessionName?: string, date?: string) {
+    const sessions = await this.sessionRepository.find({
+      relations: ['organizer', 'players', 'players.user', 'players.user.skills', 'boardGame', 'customTags',         'historyGames',
+        'historyGames.players',],
+      where: {
+        organizer: { id: userId },
+        ...(sessionName ? { sessionName } : {}),
+        ...(date ? { date } : {}),
+      },
+    });
+    console.log(userId);
+    return sessions.map((session) => ({
+      id: session.id,
+      sessionName: session.sessionName,
+      place: session.place,
+      date: session.date,
+      time: session.time,
+      description: session.description,
+      maxPlayers: session.maxPlayers,
+      skillsLvl: session.skillsLvl,
+      players: session.players.map(async (player) => {
+        const userSkills = (await (player.user.skills ?? [])).find(
+          (skill) => skill.boardGameName === session.boardGame.nameBoardGame
+        );
+  
+        return {
+          id: player.id,
+          idUser: player.user.id,
+          name: player.user.nickname,
+          avatar: player.user.mainPhoto || '',
+          skillLvl: userSkills ? userSkills.skillLvl : 0,
+          position: player?.result || null, 
+          score: player?.score || null, 
+        };
+      }),
+      organizer: {
+        id: session.organizer.id,
+        name: session.organizer.nickname,
+        avatar: session.organizer.mainPhoto || "",
+      },
+      boardGame: session.boardGame.nameBoardGame,
+      customTags: session.customTags.map((tag) => tag.nameTag),
+    }));
+  }
+
+  async removePlayer(participantId: string, idUser: string) {
+    const session = await this.sessionRepository.findOne({
+      where: { id: participantId },
+      relations: ['players', 'players.user'],
+    });
+  
+    if (!session) {
+      throw new Error('Сессия не найдена');
+    }
+  
+    session.players = session.players.filter(player => player.user.id !== idUser);
+    console.log(session);
+    await this.sessionRepository.save(session);
+  }
+  
+  
 }

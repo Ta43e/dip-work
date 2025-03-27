@@ -19,16 +19,16 @@ export class HistoryGameService {
     private readonly playersRepository: Repository<Players>,
   ) {}
 
-  async create(dto: CreateHistoryGameDto): Promise<HistoryGame> {
-    const session = await this.sessionRepository.findOne({ where: { id: dto.sessionId } });
-    if (!session) throw new NotFoundException('Session not found');
+  // async create(dto: CreateHistoryGameDto) {
+  //   const session = await this.sessionRepository.findOne({ where: { id: dto.sessionId } });
+  //   if (!session) throw new NotFoundException('Session not found');
 
-    const players = await this.playersRepository.findByIds(dto.players);
-    if (!players.length) throw new NotFoundException('Players not found');
+  //   const players = await this.playersRepository.findByIds(dto.players);
+  //   if (!players.length) throw new NotFoundException('Players not found');
 
-    const historyGame = this.historyGameRepository.create({ ...dto, session, players });
-    return this.historyGameRepository.save(historyGame);
-  }
+  //   const historyGame = this.historyGameRepository.create({ ...dto, session, players });
+  //   return this.historyGameRepository.save(historyGame);
+  // }
 
   async findAll(): Promise<HistoryGame[]> {
     return this.historyGameRepository.find({ relations: ['session', 'players'] });

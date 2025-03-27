@@ -35,6 +35,6 @@ export class UpdateSessionDto {
   @IsOptional()
   @IsInt()
   @Min(1)
-  @Max(10)
+  @Max(30)
   skillsLvl?: number;
 }

@@ -59,7 +59,7 @@ export class UpdateCustomTagDto {
 
 export class CreateTagForBoardGameDto {
   @IsString()
-  nameTag: string;
+  tag: string;
 }
 
 export class UpdateTagForBoardGameDto {

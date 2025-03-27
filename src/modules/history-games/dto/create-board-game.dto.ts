@@ -7,7 +7,7 @@ export class CreateHistoryGameDto {
 
   @IsOptional()
   @IsString()
-  scope?: string;
+  score?: string;
 
   @IsUUID('4')
   sessionId: string;

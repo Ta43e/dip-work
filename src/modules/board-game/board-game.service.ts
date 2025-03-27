@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { BoardGame, Category, TagsForBoardGame, TagsForCategory } from 'entity/some.entity';
+import { BoardGame, Category, Session, TagsForBoardGame, TagsForCategory } from 'entity/some.entity';
 import { In, Repository } from 'typeorm';
 import { CreateBoardGameDto, UpdateBoardGameDto } from './dto/create-board-game.dto';
 
@@ -10,6 +10,9 @@ export class BoardGameService {
   constructor(
     @InjectRepository(BoardGame)
     private readonly boardGameRepository: Repository<BoardGame>,
+
+    @InjectRepository(Session)
+    private readonly sessionRepository: Repository<Session>,
 
     @InjectRepository(Category)
     private readonly categoryRepository: Repository<Category>,
@@ -50,32 +53,29 @@ export class BoardGameService {
 
 
 async findAllInOneCategory(categoryName: string) {
-  console.log(categoryName);
   const games = await this.boardGameRepository.find({
-    relations: ['category', 'tags'],
+    relations: ['category', 'tags', 'sessions'],
     where: {category: {nameCategory: categoryName}},
   });
 
+  return games.map((game) => ({
+    ...game,
+    sessionsCount: game.sessions.length,
+    category: (game.category as Category)?.nameCategory,
+  }));
+}
 
+
+async findAll() {
+  const games = await this.boardGameRepository.find({
+    relations: ['category', 'tags'],
+  });
 
   return games.map((game) => ({
     ...game,
     category: (game.category as Category)?.nameCategory,
   }));
 }
-
-  async findAll() {
-    const games = await this.boardGameRepository.find({
-      relations: ['category', 'tags'],
-    });
-
-
-  
-    return games.map((game) => ({
-      ...game,
-      category: (game.category as Category)?.nameCategory,
-    }));
-  }
   
 
   async findOne(id: string): Promise<BoardGame> {

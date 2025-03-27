@@ -9,22 +9,34 @@ import { JwtAuthGuard } from 'auth/guards/jwt-auth.guard';
 export class SessionsController {
   constructor(@Inject(SessionsService)private readonly sessionService: SessionsService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Body() createSessionDto: CreateSessionDto) {
-    console.log(createSessionDto);
-    return this.sessionService.create(createSessionDto);
+  create(@Body() createSessionDto: CreateSessionDto, @Request() req) {
+    const id = req.user.id;
+    return this.sessionService.create(createSessionDto, id);
+  }
+
+  @Get('all')
+  async findAllSessions(
+    @Request() req,
+  ): Promise<Session[]> {
+    const uu  = await this.sessionService.findAlll();
+    return uu;
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('my-sessions')
   async findMySessions(
+    @Request() req,
     @Query('search') sessionName?: string,
     @Query('status') status?: string,
     @Query('date') date?: string, 
-  ): Promise<Session[]> {
-    const userId = "295d6bfb-0bcc-4151-acb9-af3fa6fc8c04";
-    return await this.sessionService.findMySessions(userId, status, sessionName, date);
+  ) {
+    const userId = req.user.id;
+    const uu  = await this.sessionService.findMySessions(userId, status, sessionName, date);
+    return uu;
   }
+
   @UseGuards(JwtAuthGuard)
   @Get('myCreated-sessions')
   async findMyCreatedSessions(
@@ -32,41 +44,44 @@ export class SessionsController {
     @Query('search') sessionName?: string,
     @Query('status') status?: string,
     @Query('date') date?: string, 
-  ): Promise<Session[]> {
-    console.log(req.user);
+  ) {
     const userId = req.user.id;
-    return await this.sessionService.findMySessions(userId, status, sessionName, date);
+    const sessions = await this.sessionService.findMyCreatedSessions(userId, status, sessionName, date);
+    return sessions;
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get(':boardGame')
   async findAll(@Param("boardGame") boardGameName: string) {
     console.log(boardGameName);
     const sessions = await this.sessionService.findAll(boardGameName);
-    console.log(sessions);
     return sessions ;
   }
+
   @UseGuards(JwtAuthGuard)
   @Get('/details/:id') 
   async findOne(@Param('id') id: string) {
-    console.log("details");
     const sessions =  [await this.sessionService.findOneById(id)];
     console.log(sessions);
     return sessions ;
   }
 
-  @Get('')    
-  findAllL() {
-    console.log("findAllL");
-    return this.sessionService.findAlll();
-  }
   @UseGuards(JwtAuthGuard)
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateSessionDto: UpdateSessionDto) {
+    console.log(updateSessionDto);
     return this.sessionService.update(id, updateSessionDto);
   }
+
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.sessionService.remove(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('/unrecord/:id')
+  async unrecord(@Request() req, @Param('id') participantId: string) {
+    return this.sessionService.removePlayer(participantId, req.user.id);
   }
 }

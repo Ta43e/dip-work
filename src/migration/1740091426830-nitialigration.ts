@@ -20,7 +20,7 @@ export class Migration1740092081251 implements MigrationInterface {
       `CREATE TABLE "session" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "place" character varying NOT NULL, "date" date NOT NULL, "time" TIME NOT NULL, "description" text NOT NULL, "maxPlayers" integer NOT NULL, "skillsLvl" integer NOT NULL, "organizerId" uuid, "boardGameId" uuid, CONSTRAINT "PK_f55da76ac1c3ac420f444d2ff11" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
-      `CREATE TABLE "history_game" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "result" character varying, "scope" character varying, "sessionId" uuid, CONSTRAINT "PK_f67297ffdcf2aa83edcbc53e29c" PRIMARY KEY ("id"))`,
+      `CREATE TABLE "history_game" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "result" character varying, "score" character varying, "sessionId" uuid, CONSTRAINT "PK_f67297ffdcf2aa83edcbc53e29c" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
       `CREATE TABLE "board_game" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "nameBoardGame" character varying(255) NOT NULL, "equipment" text NOT NULL, "minPlayers" integer NOT NULL, "maxPlayers" integer NOT NULL, "description" text NOT NULL, "age" integer NOT NULL, "boardGameImage" text NOT NULL, "rules" text NOT NULL, "categoryId" uuid NOT NULL, CONSTRAINT "PK_db53e00791f46f05e277bbe37b8" PRIMARY KEY ("id"))`,

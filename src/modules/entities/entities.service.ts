@@ -153,6 +153,7 @@ async addTagToBoardGame(tagName: string): Promise<TagsForBoardGame | string> {
   
   const newTag = this.tagsForBoardGameRepository.create({ nameTag: tagName });
   return await this.tagsForBoardGameRepository.save(newTag);
+  
 }
 
 async removeTagForBoardGame(id: string): Promise<string> {

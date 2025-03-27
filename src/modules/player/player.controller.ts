@@ -7,19 +7,28 @@ import {
     Param,
     Patch,
     Post,
+    Request,
+    UseGuards
   } from '@nestjs/common';
   import { PlayerService } from './player.service';
 import { UpdatePlayerDto } from './dto/update-player.dto';
 import { CreatePlayerDto } from './dto/create-player.dto';
+import { JwtAuthGuard } from 'auth/guards/jwt-auth.guard';
   
   @Controller('players')
   export class PlayerController {
     constructor(@Inject(PlayerService )private readonly playersService: PlayerService) {}
-  
+   
+    @UseGuards(JwtAuthGuard)
     @Post("record")
-    create(@Body() createPlayerDto: CreatePlayerDto) {
-      console.log('ddd');
-      return this.playersService.create(createPlayerDto);
+    create(@Body() createPlayerDto: CreatePlayerDto, @Request() req) {
+      return this.playersService.create( req.user.id, createPlayerDto);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Delete('/unrecord/:id')
+    async unrecord(@Param('id') participantId: string) {
+      return this.playersService.remove(participantId);
     }
   
     @Get()
@@ -32,16 +41,13 @@ import { CreatePlayerDto } from './dto/create-player.dto';
       return this.playersService.findOne(id);
     }
   
+    @UseGuards(JwtAuthGuard)
     @Patch(':id')
     update(@Param('id') id: string, @Body() updatePlayerDto: UpdatePlayerDto) {
       return this.playersService.update(id, updatePlayerDto);
     }
 
-    @Delete('/unrecord')
-    async unrecord(@Body() { participantId }: { participantId: string }) {
-      return this.playersService.remove(participantId);
-    }
-
+    @UseGuards(JwtAuthGuard)
     @Delete(':id')
     remove(@Param('id') id: string) {
       console.log(id);

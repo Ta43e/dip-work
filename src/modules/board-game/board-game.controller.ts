@@ -4,11 +4,13 @@ import {
   } from '@nestjs/common';
 import { BoardGameService } from './board-game.service';
 import { CreateBoardGameDto, UpdateBoardGameDto } from './dto/create-board-game.dto';
+import { FirebaseService } from '../firebase/firebase-service';
 
   
   @Controller('board-games')
   export class BoardGameController {
-    constructor(@Inject(BoardGameService) private readonly boardGameService: BoardGameService) {}
+    constructor(@Inject(BoardGameService) private readonly boardGameService: BoardGameService,
+    @Inject(FirebaseService) private readonly firebaseService: FirebaseService) {}
   
     @Post()
     create(@Body() dto: CreateBoardGameDto) {
@@ -17,7 +19,6 @@ import { CreateBoardGameDto, UpdateBoardGameDto } from './dto/create-board-game.
   
     @Get(":category")
     findAllInOneCategory(@Param("category") categoryName: string) {
-      console.log(categoryName);
       return this.boardGameService.findAllInOneCategory(categoryName);
     }
 

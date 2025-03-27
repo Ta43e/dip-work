@@ -40,10 +40,10 @@ export class Users {
   players: Players[];
 
   @OneToMany(() => Session, (session) => session.organizer)
-  sessions: Promise<InstanceType<typeof Session>[]>;
+  sessions: InstanceType<typeof Session>[];
 
   @OneToMany(() => Skills, (skill) => skill.user, { cascade: true })
-  skills: Promise<Skills[]>;
+  skills: Skills[];
 
   @OneToMany(() => BoardGame, (boardGame) => boardGame.creator, { cascade: true })
   createdBoardGames: BoardGame[];
@@ -57,13 +57,17 @@ export class Players {
   @ManyToOne(() => Users, (user) => user.players, { onDelete: 'CASCADE' })
   user: Users;
 
-  @ManyToOne(() => Session, (session) => session.players, {
-    onDelete: 'CASCADE',
-  })
-  session: Session;  
+  @ManyToOne(() => Session, (session) => session.players, { onDelete: 'CASCADE' })
+  session: Session;
 
-  @OneToMany(() => HistoryGame, (history) => history.players)
-  historyGames: HistoryGame[];
+  @Column({ type: 'int', nullable: true })
+  result: number;
+
+  @Column({ type: 'int', nullable: true })
+  score: number;
+
+  @ManyToOne(() => HistoryGame, (history) => history.players, { onDelete: 'CASCADE' })
+  historyGame: HistoryGame;  // У одного игрока только одна запись в истории
 
   @Column({ type: 'text', nullable: true })
   namePlayer: string;
@@ -79,6 +83,9 @@ export class Session {
 
   @Column({ type: 'text' })
   sessionName: string;
+
+  @Column({ type: 'varchar',  nullable: true  })
+  city: string;
 
   @Column({ type: 'varchar' })
   place: string;
@@ -123,18 +130,13 @@ export class HistoryGame {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', nullable: true })
-  result: string;
+  @Column({ type: 'int', nullable: true })
+  result: number;
 
-  @Column({ type: 'varchar', nullable: true })
-  scope: string;
-
-  @OneToMany(() => Players, (player) => player.historyGames)
+  @OneToMany(() => Players, (player) => player.historyGame)
   players: Players[];
 
-  @ManyToOne(() => Session, (session) => session.historyGames, {
-    onDelete: 'CASCADE',
-  })
+  @ManyToOne(() => Session, (session) => session.historyGames, { onDelete: 'CASCADE' })
   session: Session;
 }
 
@@ -219,7 +221,7 @@ export class Category {
   @Column({ type: 'text' })
   description: string;
 
-  @ManyToMany(() => TagsForCategory, { cascade: true })
+  @ManyToMany(() => TagsForCategory, (tag) => tag.categories, { cascade: true })
   @JoinTable()
   tags: TagsForCategory[];
 

@@ -10,10 +10,10 @@ import { UpdateHistoryGameDto } from './dto/update-board-game.dto';
   export class HistoryGameController {
     constructor(@Inject(HistoryGameService) private readonly historyGameService: HistoryGameService) {}
   
-    @Post()
-    create(@Body() dto: CreateHistoryGameDto) {
-      return this.historyGameService.create(dto);
-    }
+    // @Post()
+    // create(@Body() dto: CreateHistoryGameDto) {
+    //   return this.historyGameService.create(dto);
+    // }
   
     @Get()
     findAll() {

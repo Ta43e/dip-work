@@ -16,8 +16,8 @@ export class PlayerService {
     private readonly usersRepository: Repository<Users>,
   ) {}
 
-  async create(createPlayerDto: CreatePlayerDto): Promise<Players> {
-    const { userId, eventId,  namePlayer, phoneNumber} = createPlayerDto;
+  async create(userId: string, createPlayerDto: CreatePlayerDto): Promise<Players> {
+    const { eventId,  namePlayer, phoneNumber} = createPlayerDto;
     console.log(namePlayer + " " + phoneNumber)
     const user = await this.usersRepository.findOne({ where: { id: userId } });
     if (!user) throw new Error('User not found');

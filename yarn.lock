@@ -414,6 +414,48 @@
     "@eslint/core" "^0.10.0"
     levn "^0.4.1"
 
+"@firebase/app@^0.11.3", "@firebase/app@0.x":
+  version "0.11.3"
+  resolved "https://registry.npmjs.org/@firebase/app/-/app-0.11.3.tgz"
+  integrity sha512-QlTZl/RcqPSonYxB87n8KgAUW2L6ZZz0W4D91PVmQ1tJPsKsKPrWAFHL0ii2cQW6FxTxfNjbZ7kucuIcKXk3tw==
+  dependencies:
+    "@firebase/component" "0.6.13"
+    "@firebase/logger" "0.4.4"
+    "@firebase/util" "1.11.0"
+    idb "7.1.1"
+    tslib "^2.1.0"
+
+"@firebase/component@0.6.13":
+  version "0.6.13"
+  resolved "https://registry.npmjs.org/@firebase/component/-/component-0.6.13.tgz"
+  integrity sha512-I/Eg1NpAtZ8AAfq8mpdfXnuUpcLxIDdCDtTzWSh+FXnp/9eCKJ3SNbOCKrUCyhLzNa2SiPJYruei0sxVjaOTeg==
+  dependencies:
+    "@firebase/util" "1.11.0"
+    tslib "^2.1.0"
+
+"@firebase/logger@0.4.4":
+  version "0.4.4"
+  resolved "https://registry.npmjs.org/@firebase/logger/-/logger-0.4.4.tgz"
+  integrity sha512-mH0PEh1zoXGnaR8gD1DeGeNZtWFKbnz9hDO91dIml3iou1gpOnLqXQ2dJfB71dj6dpmUjcQ6phY3ZZJbjErr9g==
+  dependencies:
+    tslib "^2.1.0"
+
+"@firebase/storage@^0.13.7":
+  version "0.13.7"
+  resolved "https://registry.npmjs.org/@firebase/storage/-/storage-0.13.7.tgz"
+  integrity sha512-FkRyc24rK+Y6EaQ1tYFm3TevBnnfSNA0VyTfew2hrYyL/aYfatBg7HOgktUdB4kWMHNA9VoTotzZTGoLuK92wg==
+  dependencies:
+    "@firebase/component" "0.6.13"
+    "@firebase/util" "1.11.0"
+    tslib "^2.1.0"
+
+"@firebase/util@1.11.0":
+  version "1.11.0"
+  resolved "https://registry.npmjs.org/@firebase/util/-/util-1.11.0.tgz"
+  integrity sha512-PzSrhIr++KI6y4P6C/IdgBNMkEx0Ex6554/cYd0Hm+ovyFSJtJXqb/3OSIdnBoa2cpwZT1/GW56EmRc5qEc5fQ==
+  dependencies:
+    tslib "^2.1.0"
+
 "@humanfs/core@^0.19.1":
   version "0.19.1"
   resolved "https://registry.npmjs.org/@humanfs/core/-/core-0.19.1.tgz"
@@ -3634,6 +3676,11 @@ iconv-lite@0.6.3:
   integrity sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==
   dependencies:
     safer-buffer ">= 2.1.2 < 3.0.0"
+
+idb@7.1.1:
+  version "7.1.1"
+  resolved "https://registry.npmjs.org/idb/-/idb-7.1.1.tgz"
+  integrity sha512-gchesWBzyvGHRO9W8tzUWFDycow5gwjvFKfyV9FF32Y7F50yZMp7mP+T2mJIWFx49zicqyC4uefHM17o6xKIVQ==
 
 ieee754@^1.1.13, ieee754@^1.2.1:
   version "1.2.1"
