@@ -1,6 +1,6 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { IsUUID, IsOptional, IsArray, ArrayNotEmpty } from 'class-validator';
-import { CreateHistoryGameDto } from './create-board-game.dto';
+import { CreateHistoryGameDto } from './create-history.dto.ts';
 
 export class UpdateHistoryGameDto extends PartialType(CreateHistoryGameDto) {
   @IsOptional()

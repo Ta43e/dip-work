@@ -74,7 +74,7 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
         tags: [],
         stats: { totalGames, wins, winRate, avgPosition },
         gameHistory: players
-        ?.filter((p) => p.historyGame) // Фильтруем только тех, у кого есть запись в истории
+        ?.filter((p) => p.historyGame)
         ?.map((p) => ({
           id: p.id,
           idSession: p?.session?.id ?? '',
@@ -83,7 +83,7 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
           totalPlayers: p.session?.players?.length ?? 0,
           boardGameName: p.session?.boardGame?.nameBoardGame ?? '',
           result: p.result,
-          hasNoResults: p.historyGame.result
+          hasNoResults: p?.session?.historyGames
         })) ?? [],
       
         hostedGames: sessions?.map((s) => ({
@@ -241,20 +241,40 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
     }
   
     // Создание нового пользователя
-    async createUser(userData: Partial<Users>){
+    async createUser(userData: Partial<Users>) {
       if (!userData.hashPassword) {
         throw new BadRequestException('Password is required');
       }
     
-      userData.hashPassword = await argon.hash(userData.hashPassword);
-      console.log()
-      const user = this.usersRepository.create({
-        ...userData, // Передаём все данные
+      // Проверяем, существует ли пользователь с таким email или ником
+      const existingUser = await this.usersRepository.findOne({
+        where: [{ email: userData.email }, { nickname: userData.nickname }],
       });
-      const token = this.jwtService.sign({id: user.id, role: user.role, status: user.statusProfile}, { secret: process.env.JWT_SECRET })
-      const saveUser = await this.usersRepository.save(user);
-      return {saveUser, token};
+    
+      if (existingUser) {
+        throw new BadRequestException(
+          `Пользователь с таким ${existingUser.email === userData.email ? 'email' : 'ником'} уже существует`,
+        );
+      }
+    
+      // Хешируем пароль
+      userData.hashPassword = await argon.hash(userData.hashPassword);
+    
+      // Создаём пользователя
+      const user = this.usersRepository.create(userData);
+    
+      // Сохраняем пользователя в БД
+      const savedUser = await this.usersRepository.save(user);
+    
+      // Генерируем JWT токен
+      const token = this.jwtService.sign(
+        { id: savedUser.id, role: savedUser.role, status: savedUser.statusProfile },
+        { secret: process.env.JWT_SECRET },
+      );
+    
+      return { user: savedUser, token };
     }
+    
   
     // Обновление данных пользователя
     async updateUser(id: string, updateData: Partial<Users>): Promise<Users> {

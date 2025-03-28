@@ -66,8 +66,8 @@ export class Players {
   @Column({ type: 'int', nullable: true })
   score: number;
 
-  @ManyToOne(() => HistoryGame, (history) => history.players, { onDelete: 'CASCADE' })
-  historyGame: HistoryGame;  // У одного игрока только одна запись в истории
+  @ManyToOne(() => HistoryGame, (history) => history.players, { onDelete: 'SET NULL' })
+  historyGame: HistoryGame | null; // Изменяем на HistoryGame | null
 
   @Column({ type: 'text', nullable: true })
   namePlayer: string;
@@ -165,8 +165,6 @@ export class BoardGame {
 
   @Column({ type: 'int' })
   age: number;
-
-
 
   @Column({ type: 'text' })
   rules: string;

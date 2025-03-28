@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, Request } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { BoardGame, Session, Users } from 'entity/some.entity';
+import { BoardGame, Players, Session, Users } from 'entity/some.entity';
 import { Repository } from 'typeorm';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { UpdateSessionDto } from './dto/update-session.dto';
@@ -13,6 +13,7 @@ export class SessionsService {
     @InjectRepository(Users) private readonly userRepository: Repository<Users>,
     @InjectRepository(BoardGame) private readonly boardGameRepository: Repository<BoardGame>,
     @InjectRepository(Session) private readonly sessionRepository: Repository<Session>,
+    @InjectRepository(Players) private readonly playersRepository: Repository<Players>,
   ) {}
 
   async create(createSessionDto: CreateSessionDto, id: string): Promise<Session> {
@@ -55,11 +56,6 @@ export class SessionsService {
       players: session.players.map(async (player) => {
         const userSkills = (await (player.user.skills ?? [])).find(
           (skill) => skill.boardGameName === session.boardGame.nameBoardGame
-        );
-
-          // Находим историю игры, связанную с этим игроком
-        const history = session.historyGames.find((hg) =>
-          hg.players.some((p) => p.id === player.id)
         );
   
         return {
@@ -137,6 +133,9 @@ export class SessionsService {
           skillLvl: userSkills ? userSkills.skillLvl : 0,
           position: player?.result || null, 
           score: player?.score || null, 
+          namePlayer: player?.namePlayer || null,
+          phoneNumber: player?.phoneNumber || null,
+
         };
       }),
       organizer: {
@@ -152,8 +151,6 @@ export class SessionsService {
     };
   }
   
-  
-
   async update(id: string, updateSessionDto: UpdateSessionDto) {
     const session = await this.sessionRepository.findOne({ where: { id } });
   
@@ -216,6 +213,8 @@ export class SessionsService {
       .leftJoinAndSelect("session.organizer", "organizer")
       .leftJoinAndSelect("session.boardGame", "boardGame")
       .leftJoinAndSelect("session.customTags", "customTag")
+      .leftJoin("session.historyGames", "historyGame") // Добавляем связь с HistoryGame
+      .addSelect("historyGame.result", "historyResult") // Берем result из истории игр
       .where("player.userId = :userId", { userId });
   
     if (sessionName) {
@@ -226,9 +225,9 @@ export class SessionsService {
       query.andWhere("session.date = :date", { date });
     }
   
-    const sessions = await query.getMany();
+    const sessions = await query.getRawAndEntities();
   
-    return sessions.map((session) => ({
+    return sessions.entities.map((session, index) => ({
       id: session.id,
       sessionName: session.sessionName,
       place: session.place,
@@ -237,6 +236,7 @@ export class SessionsService {
       description: session.description,
       maxPlayers: session.maxPlayers,
       skillsLvl: session.skillsLvl,
+      result: sessions.raw[index]?.historyResult ?? null, // Добавляем result
       players: session.players.map((player) => {
         const userSkills = player.user.skills?.find(
           (skill) => skill.boardGameName === session.boardGame.nameBoardGame
@@ -247,8 +247,8 @@ export class SessionsService {
           name: player.user.nickname,
           avatar: player.user.mainPhoto || '',
           skillLvl: userSkills ? userSkills.skillLvl : 0,
-          position: player?.result || null, 
-          score: player?.score || null, 
+          position: player?.result || null,
+          score: player?.score || null,
         };
       }),
       organizer: {
@@ -260,6 +260,7 @@ export class SessionsService {
       customTags: session.customTags.map((tag) => tag.nameTag),
     }));
   }
+  
   
 
   async findMyCreatedSessions(userId: string, status?: string, sessionName?: string, date?: string) {
@@ -310,17 +311,33 @@ export class SessionsService {
   async removePlayer(participantId: string, idUser: string) {
     const session = await this.sessionRepository.findOne({
       where: { id: participantId },
-      relations: ['players', 'players.user'],
+      relations: ['players', 'players.user', 'players.historyGame'],
     });
   
     if (!session) {
       throw new Error('Сессия не найдена');
     }
   
+    // Фильтруем игроков, оставляя только тех, кто не соответствует `idUser`
+    const playersToRemove = session.players.filter(player => player.user.id === idUser);
+  
+    if (playersToRemove.length === 0) {
+      throw new Error('Игрок не найден в сессии');
+    }
+  
+    // Удаляем игрока из всех историй
+    for (const player of playersToRemove) {
+      if (player.historyGame) {
+        await this.playersRepository.delete(player.id); // Удаление из таблицы Players
+      }
+    }
+  
+    // Удаляем игрока из списка игроков сессии
     session.players = session.players.filter(player => player.user.id !== idUser);
-    console.log(session);
+  
     await this.sessionRepository.save(session);
   }
+  
   
   
 }

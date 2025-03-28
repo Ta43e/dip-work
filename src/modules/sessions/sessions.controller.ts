@@ -50,7 +50,7 @@ export class SessionsController {
     return sessions;
   }
 
-  @UseGuards(JwtAuthGuard)
+
   @Get(':boardGame')
   async findAll(@Param("boardGame") boardGameName: string) {
     console.log(boardGameName);
