@@ -35,7 +35,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect{
     @MessageBody() roomId: string
   ) {
     client.join(roomId);
-    console.log(`Клиент ${client.id} присоединился к комнате ${roomId}`);
   }
 
   @SubscribeMessage('leaveRoom')
@@ -44,7 +43,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect{
     @MessageBody() roomId: string
   ) { 
     client.leave(roomId); 
-    console.log(`Клиент ${client.id} покинул комнату ${roomId}`);
   }
 
   @SubscribeMessage('loadMessages')

@@ -1,6 +1,6 @@
 export interface Message {
     id: string;
-    socketId: string;
+    userId: string;
     isFrom: boolean;
     roomId: string;
     text: string;
