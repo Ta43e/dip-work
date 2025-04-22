@@ -21,7 +21,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect{
   ) {
     const fullMessage: Message = {
       ...rawMessage,
-      isFrom: true, // или логика определения
+      isFrom: true,
     };
   
     await this.chatService.saveMessage(fullMessage);

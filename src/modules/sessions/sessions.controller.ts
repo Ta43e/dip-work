@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, Query, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, Put, Query, Request, UseGuards } from '@nestjs/common';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { UpdateSessionDto } from './dto/update-session.dto';
 import { SessionsService } from './sessions.service';
@@ -38,6 +38,16 @@ export class SessionsController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('admin/reports/events')
+  async reportsEvents(
+    @Request() req,
+  ) {
+
+    const uu  = await this.sessionService.reportsEvents();
+    return uu;
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('myCreated-sessions')
   async findMyCreatedSessions(
     @Request() req,
@@ -53,7 +63,6 @@ export class SessionsController {
 
   @Get(':boardGame')
   async findAll(@Param("boardGame") boardGameName: string) {
-    console.log(boardGameName);
     const sessions = await this.sessionService.findAll(boardGameName);
     return sessions ;
   }
@@ -62,15 +71,19 @@ export class SessionsController {
   @Get('/details/:id') 
   async findOne(@Param('id') id: string) {
     const sessions =  [await this.sessionService.findOneById(id)];
-    console.log(sessions);
     return sessions ;
   }
 
   @UseGuards(JwtAuthGuard)
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateSessionDto: UpdateSessionDto) {
-    console.log(updateSessionDto);
     return this.sessionService.update(id, updateSessionDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('/:id/status')
+  updateStatus(@Param('id') id: string, @Body() payload: {status: string, cancellationReason: string}) {
+    return this.sessionService.updateStatus(id, payload);
   }
 
   @UseGuards(JwtAuthGuard)

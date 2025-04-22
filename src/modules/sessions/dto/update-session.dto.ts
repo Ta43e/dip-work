@@ -22,6 +22,11 @@ export class UpdateSessionDto {
   @IsString()
   time?: string;
 
+  
+  @IsOptional()
+  @IsString()
+  status?:string 
+
   @IsOptional()
   @IsString()
   description?: string;

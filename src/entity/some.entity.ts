@@ -105,6 +105,13 @@ export class Session {
   @Column({ type: 'int' })
   skillsLvl: number;
 
+  @Column({
+    type: 'enum',
+    enum: ['created', 'searching', 'found', 'confirmed', 'in_progress', 'completed', 'canceled'],
+    default: 'created',
+  })
+  status: String;
+
   @OneToMany(() => Players, (player) => player.session, { cascade: true })
   players: Players[];
 

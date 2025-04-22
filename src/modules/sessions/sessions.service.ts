@@ -4,8 +4,7 @@ import { BoardGame, Players, Session, Users } from 'entity/some.entity';
 import { Repository } from 'typeorm';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { UpdateSessionDto } from './dto/update-session.dto';
-import { UUID } from 'crypto';
-import { console } from 'inspector';
+import { EventStatus } from './types/eventStatus';
 
 @Injectable()
 export class SessionsService {
@@ -53,6 +52,7 @@ export class SessionsService {
       description: session.description,
       maxPlayers: session.maxPlayers,
       skillsLvl: session.skillsLvl,
+      status: session.status,
       players: session.players.map(async (player) => {
         const userSkills = (await (player.user.skills ?? [])).find(
           (skill) => skill.boardGameName === session.boardGame.nameBoardGame
@@ -76,6 +76,76 @@ export class SessionsService {
       boardGame: session.boardGame.nameBoardGame,
       customTags: session.customTags.map((tag) => tag.nameTag),
     }));
+  }
+
+
+  
+  async reportsEvents() {
+    const sessions = await this.sessionRepository.find({ relations: ['organizer', 'players', 'boardGame', 'historyGames', 'customTags'] });
+    
+    if (!sessions) {
+      throw new NotFoundException('sessions not found');
+    }
+    const allStatuses: EventStatus[] = ['created', 'searching', 'found', 'confirmed', 'in_progress', 'completed', 'canceled'];
+    const statusReports  = allStatuses.map((status) => ({
+        status,
+        count: sessions.filter((s) => s.status === status).length,
+    }))
+
+    const gameMap: Record<string, number> = {};
+    for (const session of sessions) {
+      const gameName = session.boardGame?.nameBoardGame || 'Unknown';
+      gameMap[gameName] = (gameMap[gameName] || 0) + 1;
+    }
+    const gameReports = Object.entries(gameMap).map(([gameName, count]) => ({
+      gameName,
+      count,
+    }));
+
+    const monthlyMap: Record<string, { created: number; completed: number; canceled: number }> = {};
+
+    for (const session of sessions) {
+      const month = session.date.slice(0, 7); // формат: "YYYY-MM"
+  
+      if (!monthlyMap[month]) {
+        monthlyMap[month] = { created: 0, completed: 0, canceled: 0 };
+      }
+  
+      monthlyMap[month].created += 1;
+  
+      if (session.status === 'completed') {
+        monthlyMap[month].completed += 1;
+      } else if (session.status === 'canceled') {
+        monthlyMap[month].canceled += 1;
+      }
+    }
+  
+    const monthlyReports = Object.entries(monthlyMap).map(([month, stats]) => ({
+      month,
+      ...stats,
+    }));
+
+      // eventsByStatus
+    const eventsByStatus: Record<EventStatus, Session[]> = {
+      created: [],
+      searching: [],
+      found: [],
+      confirmed: [],
+      in_progress: [],
+      completed: [],
+      canceled: [],
+    };
+
+    for (const session of sessions) {
+      eventsByStatus[session.status as EventStatus].push(session);
+    }
+    console.log(eventsByStatus);
+    return {
+      statusReports,
+      gameReports,
+      monthlyReports,
+      eventsByStatus,
+    };
   }
 
   async findAlll(): Promise<Session[]> {
@@ -120,6 +190,7 @@ export class SessionsService {
       description: session.description,
       maxPlayers: session.maxPlayers,
       skillsLvl: session.skillsLvl,
+      status: session.status,
       players: session.players.map((player) => {
         const userSkills = player.user.skills?.find(
           (skill) => skill.boardGameName === session.boardGame.nameBoardGame
@@ -149,6 +220,32 @@ export class SessionsService {
         nameTag: tag.nameTag,
       })),
     };
+  }
+  
+  async updateStatus(id: string, payload: {status: string, cancellationReason: String}) {
+    const session = await this.sessionRepository.findOne({ where: { id } });
+      
+    if (!session) {
+      throw new NotFoundException(`Сессия с ID ${id} не найдена`);
+    }
+
+
+
+    if(payload.status !== undefined) {
+      session.status = payload.status;
+    }
+
+    if(payload.cancellationReason !== undefined) {
+      session.status = payload.cancellationReason;
+    }
+
+    await this.sessionRepository.save(session);
+  
+    return this.sessionRepository.findOne({
+      where: { id },
+      relations: ['players', 'organizer', 'boardGame', 'historyGames', 'customTags'],
+    });
+
   }
   
   async update(id: string, updateSessionDto: UpdateSessionDto) {
@@ -182,6 +279,9 @@ export class SessionsService {
     }
     if (updateSessionDto.skillsLvl !== undefined) {
       session.skillsLvl = updateSessionDto.skillsLvl;
+    }
+    if(updateSessionDto.status !== undefined) {
+      session.status = updateSessionDto.status;
     }
   
     // Сохраняем обновленную сущность
@@ -236,6 +336,7 @@ export class SessionsService {
       description: session.description,
       maxPlayers: session.maxPlayers,
       skillsLvl: session.skillsLvl,
+      status: session.status,
       result: sessions.raw[index]?.historyResult ?? null, // Добавляем result
       players: session.players.map((player) => {
         const userSkills = player.user.skills?.find(
@@ -273,7 +374,6 @@ export class SessionsService {
         ...(date ? { date } : {}),
       },
     });
-    console.log(userId);
     return sessions.map((session) => ({
       id: session.id,
       sessionName: session.sessionName,
@@ -283,6 +383,7 @@ export class SessionsService {
       description: session.description,
       maxPlayers: session.maxPlayers,
       skillsLvl: session.skillsLvl,
+      status: session.status,
       players: session.players.map(async (player) => {
         const userSkills = (await (player.user.skills ?? [])).find(
           (skill) => skill.boardGameName === session.boardGame.nameBoardGame
@@ -337,7 +438,4 @@ export class SessionsService {
   
     await this.sessionRepository.save(session);
   }
-  
-  
-  
 }

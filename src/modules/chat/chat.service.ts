@@ -12,7 +12,7 @@ export class ChatService {
         private messageModel: Model<MessageDocument>,
       ) {}
       
-    async saveMessage(data: Partial<Message>): Promise<Message> {
+      async saveMessage(data: Partial<Message>): Promise<Message> {
         const created = new this.messageModel(data);
         return created.save();
       }
