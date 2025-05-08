@@ -9,15 +9,16 @@ import { UserModule } from 'modules/user/user.module'
 
 @Global()
 @Module({
-	imports: [
-		TelegrafModule.forRootAsync({
-			imports: [ConfigModule],
-			useFactory: getTelegrafConfig,
-			inject: [ConfigService]
-		}),
-		UserModule
-	],
-	providers: [TelegramService],
-	exports: [TelegramService]
+  imports: [
+    ConfigModule,
+    TelegrafModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: getTelegrafConfig,
+      inject: [ConfigService]
+    }),
+    UserModule
+  ],
+  providers: [TelegramService],
+  exports: [TelegramService]
 })
 export class TelegramModule {}

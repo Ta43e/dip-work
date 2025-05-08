@@ -84,6 +84,13 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
       return await this.userService.updateGameMastery(userId, id, mastery.mastery);
     }
   
+
+    @Get('refresh-token')
+    async refreshTocken(@Request() req) { 
+      const result = await this.userService.refreshTocken(req.id);
+      return result;
+    }
+
     // ----------
     @UseGuards(JwtAuthGuard)
     @Get(':id')
@@ -124,5 +131,32 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
     async unblockUser(@Param('id') id: string) {
       return await this.userService.unblockUser(id);
     }
+
+
+    @UseGuards(JwtAuthGuard)
+    @Get('generate-tg-token/:userId')
+    async getTelegramToken(@Param('userId') userId: string) {
+      const token = await this.userService.generateTelegramAuthToken(userId);
+    
+      const botUsername = 'SoloGamerBot_bot';
+      const link = `https://t.me/${botUsername}?start=${token}`;
+    
+      return {
+        token,
+        link, 
+      };
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Patch('unsubscribe')
+    async unsubscribeFromTelegram(@Request() req) {
+      const result = await this.userService.updateUserIdTG(req.id, {
+        telegramId: null,
+      });
+      return result;
+    }
+    
+
+
   }
   

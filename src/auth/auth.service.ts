@@ -26,11 +26,20 @@ export class AuthService {
   }
 
   async login(user: Users) {
-    const payload = { id: user.id, role: user.role, status: user.statusProfile };
+    const payload: Record<string, any> = {
+      id: user.id,
+      role: user.role,
+      status: user.statusProfile,
+    };
+  
+    if (user.telegramId) {
+      payload.telegramId = user.telegramId;
+    }
+  
     return {
-        id: user.id,
-        role: user.role,
-        access_token: this.jwtService.sign(payload, { secret: process.env.JWT_SECRET }),
-      };
+      id: user.id,
+      role: user.role,
+      access_token: this.jwtService.sign(payload, { secret: process.env.JWT_SECRET }),
+    };
   }
 }

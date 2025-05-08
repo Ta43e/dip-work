@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException, Request } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException, Request } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BoardGame, Players, Session, Users } from 'entity/some.entity';
 import { Repository } from 'typeorm';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { UpdateSessionDto } from './dto/update-session.dto';
 import { EventStatus } from './types/eventStatus';
+import { TelegramService } from 'modules/tg-bot/telegram.service';
 
 @Injectable()
 export class SessionsService {
@@ -13,6 +14,7 @@ export class SessionsService {
     @InjectRepository(BoardGame) private readonly boardGameRepository: Repository<BoardGame>,
     @InjectRepository(Session) private readonly sessionRepository: Repository<Session>,
     @InjectRepository(Players) private readonly playersRepository: Repository<Players>,
+    @Inject(TelegramService) private readonly telegramBotService: TelegramService,
   ) {}
 
   async create(createSessionDto: CreateSessionDto, id: string): Promise<Session> {
@@ -222,31 +224,51 @@ export class SessionsService {
     };
   }
   
-  async updateStatus(id: string, payload: {status: string, cancellationReason: String}) {
-    const session = await this.sessionRepository.findOne({ where: { id } });
-      
-    if (!session) {
-      throw new NotFoundException(`Сессия с ID ${id} не найдена`);
-    }
+// В SessionService
+async updateStatus(id: string, payload: { status: string; cancellationReason: string }) {
 
+  const session = await this.sessionRepository.findOne({
+    where: { id },
+    relations: ['players', 'players.user', 'organizer'],
+  });
 
-
-    if(payload.status !== undefined) {
-      session.status = payload.status;
-    }
-
-    if(payload.cancellationReason !== undefined) {
-      session.status = payload.cancellationReason;
-    }
-
-    await this.sessionRepository.save(session);
-  
-    return this.sessionRepository.findOne({
-      where: { id },
-      relations: ['players', 'organizer', 'boardGame', 'historyGames', 'customTags'],
-    });
-
+  if (!session) {
+    throw new NotFoundException(`Сессия с ID ${id} не найдена`);
   }
+
+  if (payload.status !== undefined) {
+    session.status = payload.status;
+  }
+
+  if (payload.cancellationReason !== undefined) {
+    session.status = payload.cancellationReason;
+  }
+
+  await this.sessionRepository.save(session);
+
+  const updatedSession = await this.sessionRepository.findOne({
+    where: { id },
+    relations: ['players', 'players.user', 'organizer', 'boardGame', 'historyGames', 'customTags'],
+  });
+
+  // Уведомляем участников
+  const usersToNotify = [
+    session.organizer,
+    ...session.players.map(p => p.user),
+  ].filter((u): u is Users => !!u?.telegramId); // только у кого есть telegramId
+  console.log(usersToNotify);
+  await Promise.all(
+    usersToNotify.map(user =>
+      this.telegramBotService.sendMessage(
+        user.telegramId as string,
+        `Статус сессии "${session.sessionName}" обновлён: ${session.status}`
+      )
+    )
+  );
+
+  return updatedSession;
+}
+
   
   async update(id: string, updateSessionDto: UpdateSessionDto) {
     const session = await this.sessionRepository.findOne({ where: { id } });

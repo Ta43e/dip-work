@@ -10,6 +10,7 @@ import { Repository } from 'typeorm';
 import * as argon from 'argon2';  
 import { JwtService } from '@nestjs/jwt';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { addMinutes } from 'date-fns';
   @Injectable()
   export class UserService {
     constructor(
@@ -266,11 +267,16 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
       // Сохраняем пользователя в БД
       const savedUser = await this.usersRepository.save(user);
     
-      // Генерируем JWT токен
-      const token = this.jwtService.sign(
-        { id: savedUser.id, role: savedUser.role, status: savedUser.statusProfile },
-        { secret: process.env.JWT_SECRET },
-      );
+      const payload = {
+        id: savedUser.id,
+        role: savedUser.role,
+        status: savedUser.statusProfile,
+        ...(savedUser.telegramId && { telegramId: savedUser.telegramId }),
+      };
+      
+      const token = this.jwtService.sign(payload, {
+        secret: process.env.JWT_SECRET,
+      });
     
       return { user: savedUser, token };
     }
@@ -312,5 +318,108 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
     async findOneByEmail(email: string) {
       return this.usersRepository.findOne({where: {email: email}})
     }
+
+    async findByChatId(chatId: string) {
+      const user = await this.usersRepository.findOne({ where: { telegramId:  chatId} });
+      if (!user) throw new NotFoundException('Пользователь не найден');
+      return user;
+    }
+
+    async findByTelegramToken(token: string): Promise<Users | null> {
+      return await this.usersRepository.findOne({ where: { telegramAuthToken: token } });
+    }
+    
+    async updateUserIdTG(id: string, updateData: Partial<Users>) {
+      const user = await this.usersRepository.findOneBy({ id });
+    
+      if (!user) {
+        throw new NotFoundException('Пользователь не найден');
+      }
+    
+      // Обновляем только telegramId, если он есть в updateData
+      if (Object.prototype.hasOwnProperty.call(updateData, 'telegramId')) {
+        user.telegramId = updateData.telegramId ?? null;
+      }
+    
+      await this.usersRepository.save(user);
+    
+
+      const payload: Record<string, any> = {
+        id: user.id,
+        role: user.role,
+        status: user.statusProfile,
+      };
+    
+      if (user.telegramId) {
+        payload.telegramId = user.telegramId;
+      }
+    
+      const token = this.jwtService.sign(payload, {
+        secret: process.env.JWT_SECRET,
+      });
+    
+      return {
+        success: true,
+        access_token: token,
+      };
+    }
+    
+
+    async generateTelegramAuthToken(userId: string): Promise<string> {
+      const token = crypto.randomUUID();
+  
+      const expiresAt = addMinutes(new Date(), 10); // токен действует 10 минут
+  
+      await this.usersRepository.update(
+        { id: userId },
+        {
+          telegramAuthToken: token,
+          telegramAuthTokenExpiresAt: expiresAt,
+        },
+      );
+  
+      return token;
+    }
+
+    async generateTelegramLoginToken(user: Users) {
+      const payload = {
+        id: user.id,
+        role: user.role,
+        status: user.statusProfile,
+        telegramId: user.telegramId,
+      };
+    
+      return this.jwtService.sign(payload, {
+        secret: process.env.JWT_SECRET
+      });
+    }
+
+    async refreshTocken(id: string) {
+      const user = await this.usersRepository.findOneBy({ id });
+    
+      if (!user) {
+        throw new NotFoundException('Пользователь не найден');
+      }
+  
+      const payload: Record<string, any> = {
+        id: user.id,
+        role: user.role,
+        status: user.statusProfile,
+      };
+    
+      if (user.telegramId) {
+        payload.telegramId = user.telegramId;
+      }
+    
+      const token = this.jwtService.sign(payload, {
+        secret: process.env.JWT_SECRET,
+      });
+    
+      return {
+        success: true,
+        access_token: token,
+      };
+    }
+      
   }
   

@@ -14,6 +14,15 @@ export class Users {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  telegramId: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  telegramAuthToken: string | null;
+  
+  @Column({ type: 'timestamp', nullable: true })
+  telegramAuthTokenExpiresAt: Date | null;
+
   @Column({ unique: true, type: 'varchar', length: 255 })
   email: string;
 

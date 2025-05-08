@@ -15,6 +15,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ChatModule } from './modules/chat/chat.module';
 import { MongooseModule } from '@nestjs/mongoose';
+import { TelegramModule } from 'modules/tg-bot/telegram.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { MongooseModule } from '@nestjs/mongoose';
     CategoriesModule,
     EntitiesModule,
     ChatModule,
+    TelegramModule,
   ],
   controllers: [BoardGameController],
 })

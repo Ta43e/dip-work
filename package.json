@@ -40,6 +40,7 @@
     "argon2": "^0.41.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
+    "date-fns": "^4.1.0",
     "mongoose": "^8.13.2",
     "nestjs-telegraf": "^2.8.1",
     "node-fetch": "^2.7.0",
@@ -51,7 +52,8 @@
     "rxjs": "^7.8.1",
     "socket.io": "^4.8.1",
     "telegraf": "^4.16.3",
-    "typeorm": "^0.3.20"
+    "typeorm": "^0.3.20",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

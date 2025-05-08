@@ -7,8 +7,10 @@ import { Users } from 'entity/some.entity';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
-  constructor(    @InjectRepository(Users) 
-  private readonly userRepository: Repository<Users>,) {
+  constructor(
+    @InjectRepository(Users)
+    private readonly userRepository: Repository<Users>,
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
@@ -23,11 +25,15 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new UnauthorizedException('Пользователь не найден');
     }
 
-    // Проверяем, не изменился ли статус или роль
-    if (user.statusProfile !== payload.status || user.role !== payload.role) {
+    const isStatusMatch = user.statusProfile === payload.status;
+    const isRoleMatch = user.role === payload.role;
+    const isTelegramMatch =
+      (user.telegramId ?? null) === (payload.telegramId ?? null);
+
+    if (!isStatusMatch || !isRoleMatch || !isTelegramMatch) {
       throw new UnauthorizedException('Токен устарел, авторизуйтесь заново');
     }
-
-    return { id: payload.id, role: payload.role, status: payload.status };
+    
+    return { id: payload.id, role: payload.role, status: payload.status, telegramId: user.telegramId };
   }
 }
